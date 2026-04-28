@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Agent 2: TikTok Content Finder for your AI Automation System" />
+  <title>Agent 2: TikTok Finder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div class="min-h-screen flex flex-col">
+    <header class="bg-slate-800/95 border-b border-slate-700 sticky top-0 z-40 backdrop-blur">
+      <div class="max-w-[1800px] mx-auto px-4 py-3">
+        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="h-11 w-11 rounded-xl bg-pink-500/20 text-pink-400 grid place-items-center text-xl border border-pink-500/30">
+              <i class="fa-brands fa-tiktok"></i>
+            </div>
+            <div>
+              <h1 class="text-xl md:text-2xl font-extrabold tracking-tight">Agent 2: TikTok Finder</h1>
+              <p class="text-slate-400 text-sm">Find viral TikToks by topic and prepare them for Agent 3.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-[minmax(280px,1fr)_auto_auto] gap-3 items-end">
+            <label class="block">
+              <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Backend URL</span>
+              <div class="mt-1 flex gap-2">
+                <input id="backendUrlInput" type="url" placeholder="https://your-app.onrender.com" class="control-input w-full" />
+                <button id="connectBtn" class="primary-btn whitespace-nowrap"><i class="fa-solid fa-link mr-2"></i>Connect</button>
+              </div>
+            </label>
+
+            <div class="connection-pill">
+              <span id="statusDot" class="status-dot offline"></span>
+              <span id="statusText">Offline</span>
+            </div>
+
+            <label class="block min-w-[240px]">
+              <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Session ID (optional)</span>
+              <input id="systemSessionInput" type="text" placeholder="batch / workflow session" class="control-input mt-1 w-full" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-[1800px] mx-auto w-full p-4 lg:p-6">
+      <div class="grid grid-cols-1 xl:grid-cols-[340px_minmax(0,1fr)] gap-6">
+        <aside class="space-y-5">
+          <section class="panel-card">
+            <div class="panel-title"><i class="fa-solid fa-layer-group text-pink-400"></i><span>Topics</span></div>
+            <div id="topicsList" class="flex flex-wrap gap-2"></div>
+            <div class="mt-4 flex gap-2">
+              <input id="customTopicInput" type="text" placeholder="Add custom topic" class="control-input flex-1" />
+              <button id="addTopicBtn" class="secondary-btn"><i class="fa-solid fa-plus"></i></button>
+            </div>
+          </section>
+
+          <section class="panel-card space-y-4">
+            <div>
+              <div class="panel-title"><i class="fa-regular fa-clock text-cyan-400"></i><span>Time</span></div>
+              <div class="space-y-2 mt-3">
+                <label class="radio-row"><input type="radio" name="timeFilter" value="24h"><span>24 Hours</span></label>
+                <label class="radio-row"><input type="radio" name="timeFilter" value="7d" checked><span>7 Days</span></label>
+                <label class="radio-row"><input type="radio" name="timeFilter" value="30d"><span>30 Days</span></label>
+              </div>
+            </div>
+
+            <div>
+              <div class="panel-title"><i class="fa-solid fa-arrow-up-right-dots text-amber-400"></i><span>Sort By</span></div>
+              <div class="space-y-2 mt-3">
+                <label class="radio-row"><input type="radio" name="sortBy" value="most_viral" checked><span>Most Viral</span></label>
+                <label class="radio-row"><input type="radio" name="sortBy" value="recent"><span>Recent</span></label>
+                <label class="radio-row"><input type="radio" name="sortBy" value="engaging"><span>Engaging</span></label>
+              </div>
+            </div>
+
+            <div>
+              <div class="panel-title"><i class="fa-solid fa-filter text-emerald-400"></i><span>Filters</span></div>
+              <div class="space-y-3 mt-3">
+                <label class="check-row"><input id="min50kCheckbox" type="checkbox" checked><span>Min 50K views</span></label>
+                <label class="check-row"><input id="hindiOnlyCheckbox" type="checkbox"><span>Hindi only</span></label>
+                <label class="check-row"><input id="under60Checkbox" type="checkbox"><span>Under 60 seconds</span></label>
+              </div>
+            </div>
+
+            <div>
+              <div class="panel-title"><i class="fa-solid fa-cookie-bite text-fuchsia-400"></i><span>TikTok Session Cookie</span></div>
+              <input id="tiktokSessionInput" type="text" placeholder="Optional for live data" class="control-input mt-3 w-full" />
+              <p class="text-xs text-slate-500 mt-2">If empty, backend safely falls back to mock data for testing.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+              <button id="searchBtn" class="primary-btn"><i class="fa-solid fa-magnifying-glass mr-2"></i>Search</button>
+              <button id="clearBtn" class="danger-btn"><i class="fa-solid fa-xmark mr-2"></i>Clear</button>
+            </div>
+          </section>
+
+          <section class="panel-card">
+            <div class="flex items-center justify-between gap-3">
+              <div class="panel-title"><i class="fa-solid fa-clock-rotate-left text-violet-400"></i><span>History</span></div>
+              <button id="clearHistoryBtn" class="tiny-btn">Clear</button>
+            </div>
+            <div id="historyList" class="mt-4 space-y-2 text-sm text-slate-300"></div>
+          </section>
+        </aside>
+
+        <section class="space-y-5 min-w-0">
+          <section class="panel-card">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Results</p>
+                <h2 id="resultsTitle" class="text-2xl font-bold mt-1">Found 0 videos</h2>
+                <p id="resultsMeta" class="text-sm text-slate-400 mt-1">Connect your backend and run a search.</p>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <button id="selectAllBtn" class="secondary-btn"><i class="fa-regular fa-square-check mr-2"></i>Select All</button>
+                <button id="deselectAllBtn" class="secondary-btn"><i class="fa-regular fa-square mr-2"></i>Deselect All</button>
+              </div>
+            </div>
+
+            <div class="mt-5 chart-shell">
+              <canvas id="viewsChart" height="110"></canvas>
+            </div>
+          </section>
+
+          <section id="mockBanner" class="hidden warning-banner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Using demo data - Add TikTok Session ID for live data.</span>
+          </section>
+
+          <section id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5"></section>
+
+          <div class="flex justify-center">
+            <button id="loadMoreBtn" class="secondary-btn hidden"><i class="fa-solid fa-plus mr-2"></i>Load More Videos</button>
+          </div>
+
+          <section class="panel-card">
+            <div class="panel-title"><i class="fa-solid fa-fire text-orange-400"></i><span>Trending Hashtags</span></div>
+            <div id="hashtagsWrap" class="mt-4 flex flex-wrap gap-2"></div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <div class="sticky bottom-0 z-30 border-t border-slate-700 bg-slate-900/92 backdrop-blur px-4 py-4">
+      <div class="max-w-[1800px] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <p class="text-sm text-slate-300"><span id="selectedCount">0</span> videos selected</p>
+          <p id="batchInfo" class="text-xs text-slate-500 mt-1">No batch prepared yet.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button id="clearSelectionBtn" class="secondary-btn"><i class="fa-solid fa-broom mr-2"></i>Clear Selection</button>
+          <button id="sendToAgent3Btn" class="primary-btn"><i class="fa-solid fa-arrow-right mr-2"></i>Send to Agent 3</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="previewModal" class="modal hidden">
+    <div class="modal-backdrop" data-close-modal="true"></div>
+    <div class="modal-card">
+      <button id="closeModalBtn" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+      <div id="previewContent"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
