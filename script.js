@@ -176,7 +176,7 @@ async function connectBackend(isAuto = false) {
   const normalizedUrl = normalizeBackendUrl(state.backendUrl);
   if (!normalizedUrl) {
     setConnectionStatus(false);
-    if (!isAuto) showToast('❌ Invalid backend URL format', 'error');
+    if (!isAuto) showToast('Invalid backend URL format', 'error');
     return;
   }
 
@@ -194,11 +194,11 @@ async function connectBackend(isAuto = false) {
     state.connected = true;
     state.currentDataSource = data.data_source || 'mock';
     setConnectionStatus(true, data.data_source);
-    showToast(`✅ Backend connected (${data.data_source} mode)`, 'success');
+    showToast(`Backend connected (${data.data_source} mode)`, 'success');
   } catch (error) {
     state.connected = false;
     setConnectionStatus(false);
-    if (!isAuto) showToast('⚠️ Cannot connect to backend. Check URL and try again.', 'error');
+    if (!isAuto) showToast('Cannot connect to backend. Check URL and try again.', 'error');
   } finally {
     els.connectBtn.disabled = false;
     els.connectBtn.innerHTML = '<i class="fa-solid fa-link mr-2"></i>Connect';
@@ -239,7 +239,6 @@ function renderTopics() {
 }
 
 function toggleTopic(topic) {
-  // Yeh selected niche topics ko on/off karta hai.
   if (state.activeTopics.has(topic)) {
     state.activeTopics.delete(topic);
   } else {
@@ -296,7 +295,7 @@ function clearHistory() {
   state.searchHistory = [];
   localStorage.removeItem(STORAGE_KEYS.searchHistory);
   renderHistory();
-  showToast('🧹 Search history cleared', 'success');
+  showToast('Search history cleared', 'success');
 }
 
 function getCheckedValue(name) {
@@ -321,7 +320,7 @@ function buildSearchPayload(countOverride = null) {
 
 async function searchTikTok(resetCount = true) {
   if (!state.connected) {
-    showToast('⚠️ Cannot connect to backend. Check URL and try again.', 'error');
+    showToast('Cannot connect to backend. Check URL and try again.', 'error');
     return;
   }
 
@@ -352,9 +351,9 @@ async function searchTikTok(resetCount = true) {
   } catch (error) {
     renderEmptyState('Search failed. Try again.');
     if (String(error.message || '').includes('429')) {
-      showToast('⏳ Too many requests. Please wait...', 'warning');
+      showToast('Too many requests. Please wait...', 'warning');
     } else {
-      showToast('❌ Search failed. Retrying did not succeed.', 'error');
+      showToast('Search failed. Retrying did not succeed.', 'error');
     }
   }
 }
@@ -369,7 +368,7 @@ async function fetchWithRetry(url, options, retryCount = 1) {
     return response;
   } catch (error) {
     if (retryCount > 0) {
-      showToast('❌ Search failed. Retrying...', 'warning');
+      showToast('Search failed. Retrying...', 'warning');
       await wait(1000);
       return fetchWithRetry(url, options, retryCount - 1);
     }
@@ -412,12 +411,16 @@ function renderLoadingSkeletons(count) {
 
 function renderResults(data) {
   const videos = data.videos || [];
+  
+  // FIXED: Proper keyword display
+  const keywordText = typeof data.keywords === 'string' ? data.keywords : 'viral content';
+  
   els.resultsTitle.textContent = `Found ${videos.length} videos`;
-  els.resultsMeta.textContent = `${capitalizeWords(data.keywords || '')} • ${data.data_source === 'live' ? 'Live TikTok data' : 'Mock fallback data'}${data.cached ? ' • Cached' : ''}`;
+  els.resultsMeta.textContent = `${keywordText} • ${data.data_source === 'live' ? 'Live TikTok data' : 'Mock fallback data'}${data.cached ? ' • Cached' : ''}`;
   els.mockBanner.classList.toggle('hidden', data.data_source !== 'mock');
 
   if (!videos.length) {
-    renderEmptyState('😕 No videos found. Try different keywords.');
+    renderEmptyState('No videos found. Try different keywords.');
     destroyChart();
     return;
   }
@@ -450,7 +453,7 @@ function createVideoCard(video) {
 
   card.innerHTML = `
     <div class="relative">
-      <img class="video-thumb" src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title || 'TikTok thumbnail')}" loading="lazy" referrerpolicy="no-referrer" />
+      <img class="video-thumb" src="${escapeHtml(video.thumbnail || '')}" alt="${escapeHtml(video.title || 'TikTok thumbnail')}" loading="lazy" onerror="this.src='https://picsum.photos/400/700'" />
       <div class="video-overlay"></div>
 
       <div class="badge-row">
@@ -464,7 +467,7 @@ function createVideoCard(video) {
     </div>
 
     <div class="video-content">
-      <h3 class="font-bold text-lg leading-snug pr-12">${escapeHtml(truncate(video.title, 95))}</h3>
+      <h3 class="font-bold text-lg leading-snug pr-12">${escapeHtml(truncate(video.title || 'Untitled', 95))}</h3>
       <div class="mt-2 text-sm text-slate-300 flex flex-wrap gap-x-3 gap-y-2">
         <span><i class="fa-regular fa-user mr-1 text-sky-300"></i>${escapeHtml(video.creator_username || '@creator')}</span>
         <span><i class="fa-regular fa-clock mr-1 text-cyan-300"></i>${escapeHtml(video.duration_label || '0:00')}</span>
@@ -472,10 +475,10 @@ function createVideoCard(video) {
       </div>
 
       <div class="meta-grid">
-        <div class="meta-pill"><div class="text-xs text-slate-400">Views</div><div class="font-bold text-lg">${escapeHtml(video.views_label || formatCompact(video.views || 0))}</div></div>
+        <div class="meta-pill"><div class="text-xs text-slate-400">Views</div><div class="font-bold text-lg">${escapeHtml(video.views_label || formatCompactNumber(video.views || 0))}</div></div>
         <div class="meta-pill"><div class="text-xs text-slate-400">Engagement</div><div class="font-bold text-lg">${Number(video.engagement_rate || 0).toFixed(2)}%</div></div>
-        <div class="meta-pill"><div class="text-xs text-slate-400">Likes</div><div class="font-bold text-lg">${escapeHtml(video.likes_label || formatCompact(video.likes || 0))}</div></div>
-        <div class="meta-pill"><div class="text-xs text-slate-400">Comments / Shares</div><div class="font-bold text-lg">${escapeHtml(video.comments_label || formatCompact(video.comments || 0))} / ${escapeHtml(video.shares_label || formatCompact(video.shares || 0))}</div></div>
+        <div class="meta-pill"><div class="text-xs text-slate-400">Likes</div><div class="font-bold text-lg">${escapeHtml(video.likes_label || formatCompactNumber(video.likes || 0))}</div></div>
+        <div class="meta-pill"><div class="text-xs text-slate-400">Comments/Shares</div><div class="font-bold text-lg">${escapeHtml(video.comments_label || formatCompactNumber(video.comments || 0))} / ${escapeHtml(video.shares_label || formatCompactNumber(video.shares || 0))}</div></div>
       </div>
 
       <div class="mt-4 text-sm text-slate-300 space-y-2">
@@ -494,7 +497,6 @@ function createVideoCard(video) {
 }
 
 function toggleVideoSelection(video, card = null) {
-  // Yeh selected videos ko sticky bar aur localStorage ke saath sync karta hai.
   if (state.selectedVideoUrls.has(video.url)) {
     state.selectedVideoUrls.delete(video.url);
     state.selectedVideoMap.delete(video.url);
@@ -536,7 +538,7 @@ function selectAllVisible() {
   persistSelection();
   renderSelectedCount();
   rerenderCurrentGrid();
-  showToast(`✅ ${state.currentVideos.length} videos selected`, 'success');
+  showToast(`${state.currentVideos.length} videos selected`, 'success');
 }
 
 function clearSelection() {
@@ -545,10 +547,11 @@ function clearSelection() {
   persistSelection();
   renderSelectedCount();
   rerenderCurrentGrid();
-  showToast('🧹 Selection cleared', 'success');
+  showToast('Selection cleared', 'success');
 }
 
 async function loadTrendingHashtags(keywordString) {
+  if (!state.connected) return;
   try {
     const response = await fetch(`${state.backendUrl}/api/get-trending-hashtags`, {
       method: 'POST',
@@ -589,12 +592,12 @@ function renderHashtags(hashtags) {
 
 async function sendToAgent3() {
   if (!state.selectedVideoUrls.size) {
-    showToast('⚠️ Select at least 1 video before sending to Agent 3.', 'warning');
+    showToast('Select at least 1 video before sending to Agent 3.', 'warning');
     return;
   }
 
   if (!state.connected) {
-    showToast('⚠️ Backend offline. Reconnect and try again.', 'error');
+    showToast('Backend offline. Reconnect and try again.', 'error');
     return;
   }
 
@@ -603,7 +606,7 @@ async function sendToAgent3() {
     .filter(Boolean);
 
   if (!videos.length) {
-    showToast('⚠️ Refresh search results so selected video details can be sent.', 'warning');
+    showToast('Refresh search results so selected video details can be sent.', 'warning');
     return;
   }
 
@@ -625,9 +628,9 @@ async function sendToAgent3() {
     state.lastBatchId = data.batch_id;
     localStorage.setItem(STORAGE_KEYS.agent3BatchId, data.batch_id);
     els.batchInfo.textContent = `Batch ready for Agent 3: ${data.batch_id}`;
-    showToast(`✅ ${data.video_count} videos ready for Agent 3!`, 'success');
+    showToast(`${data.video_count} videos ready for Agent 3!`, 'success');
   } catch {
-    showToast('❌ Could not prepare selected videos for Agent 3.', 'error');
+    showToast('Could not prepare selected videos for Agent 3.', 'error');
   } finally {
     els.sendToAgent3Btn.disabled = false;
     els.sendToAgent3Btn.innerHTML = '<i class="fa-solid fa-arrow-right mr-2"></i>Send to Agent 3';
@@ -636,11 +639,15 @@ async function sendToAgent3() {
 
 function updateResultsChart(videos) {
   const topVideos = videos.slice(0, 6);
-  const labels = topVideos.map((video, index) => `${index + 1}`);
+  const labels = topVideos.map((_, index) => `${index + 1}`);
   const views = topVideos.map((video) => Number(video.views || 0));
   const engagement = topVideos.map((video) => Number(video.engagement_rate || 0));
 
   destroyChart();
+  
+  // FIXED: Check if canvas exists and Chart is available
+  if (!els.viewsChart || typeof Chart === 'undefined') return;
+  
   state.chart = new Chart(els.viewsChart, {
     type: 'bar',
     data: {
@@ -680,7 +687,8 @@ function updateResultsChart(videos) {
           grid: { color: 'rgba(148, 163, 184, 0.08)' },
           ticks: {
             color: '#94a3b8',
-            callback: (value) => formatCompact(value)
+            // FIXED: Safe formatCompact call
+            callback: (value) => formatCompactNumber(value)
           }
         },
         y1: {
@@ -727,7 +735,7 @@ function clearSearchState() {
 
 function loadMoreResults() {
   if (!state.lastPayload) {
-    showToast('ℹ️ Run a search first before loading more results.', 'warning');
+    showToast('Run a search first before loading more results.', 'warning');
     return;
   }
   state.lastCount += 12;
@@ -739,18 +747,18 @@ function openPreviewModal(video) {
   const embedHtml = isMock
     ? `
       <div class="grid md:grid-cols-[260px_minmax(0,1fr)] gap-6 items-start">
-        <img src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" class="rounded-2xl w-full max-w-[260px] aspect-[9/14] object-cover border border-slate-700" />
+        <img src="${escapeHtml(video.thumbnail || '')}" alt="${escapeHtml(video.title || 'Video')}" class="rounded-2xl w-full max-w-[260px] aspect-[9/14] object-cover border border-slate-700" onerror="this.src='https://picsum.photos/260/400'" />
         <div>
           <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Preview</p>
-          <h3 class="text-2xl font-bold mt-2">${escapeHtml(video.title)}</h3>
+          <h3 class="text-2xl font-bold mt-2">${escapeHtml(video.title || 'Untitled')}</h3>
           <div class="mt-4 space-y-2 text-slate-300">
-            <p><strong>Creator:</strong> ${escapeHtml(video.creator_username || '')}</p>
-            <p><strong>Views:</strong> ${escapeHtml(video.views_label || formatCompact(video.views || 0))}</p>
-            <p><strong>Likes:</strong> ${escapeHtml(video.likes_label || formatCompact(video.likes || 0))}</p>
+            <p><strong>Creator:</strong> ${escapeHtml(video.creator_username || 'N/A')}</p>
+            <p><strong>Views:</strong> ${escapeHtml(video.views_label || formatCompactNumber(video.views || 0))}</p>
+            <p><strong>Likes:</strong> ${escapeHtml(video.likes_label || formatCompactNumber(video.likes || 0))}</p>
             <p><strong>Sound:</strong> ${escapeHtml(video.music_name || 'Original Sound')}</p>
             <p><strong>Posted:</strong> ${escapeHtml(video.posted_label || 'recently')}</p>
           </div>
-          <a href="${escapeHtml(video.url)}" target="_blank" rel="noopener noreferrer" class="primary-btn inline-block mt-6">Open TikTok Link</a>
+          <a href="${escapeHtml(video.url || '#')}" target="_blank" rel="noopener noreferrer" class="primary-btn inline-block mt-6">Open TikTok Link</a>
         </div>
       </div>
     `
@@ -758,10 +766,10 @@ function openPreviewModal(video) {
       <iframe class="preview-frame" src="https://www.tiktok.com/embed/v2/${encodeURIComponent(video.id)}" allowfullscreen></iframe>
       <div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
         <div>
-          <h3 class="text-xl font-bold">${escapeHtml(video.title)}</h3>
+          <h3 class="text-xl font-bold">${escapeHtml(video.title || 'Untitled')}</h3>
           <p class="text-slate-400 mt-1">${escapeHtml(video.creator_username || '')} • ${escapeHtml(video.posted_label || '')}</p>
         </div>
-        <a href="${escapeHtml(video.url)}" target="_blank" rel="noopener noreferrer" class="secondary-btn">Open in TikTok</a>
+        <a href="${escapeHtml(video.url || '#')}" target="_blank" rel="noopener noreferrer" class="secondary-btn">Open in TikTok</a>
       </div>
     `;
 
@@ -782,19 +790,12 @@ function showToast(message, type = 'success') {
   setTimeout(() => toast.remove(), 3200);
 }
 
-function formatCompact(value) {
+// FIXED: Renamed to avoid conflict
+function formatCompactNumber(value) {
   const number = Number(value || 0);
   if (number >= 1000000) return `${(number / 1000000).toFixed(1)}M`;
   if (number >= 1000) return `${(number / 1000).toFixed(1)}K`;
   return `${number}`;
-}
-
-function capitalizeWords(input) {
-  return String(input)
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .join(', ');
 }
 
 function truncate(text, max) {
